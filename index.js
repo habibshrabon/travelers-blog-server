@@ -22,6 +22,7 @@ async function run() {
     await client.connect();
     const database = client.db("travel-blog");
     const blogCollection = database.collection("blogs");
+    const usersCollection = database.collection("users");
 
     //add api
     app.post("/blogs", async (req, res) => {
@@ -35,6 +36,43 @@ async function run() {
       const cursor = blogCollection.find({});
       const blogs = await cursor.toArray();
       res.send(blogs);
+    });
+
+    //add user info
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      const result = await usersCollection.insertOne(user);
+      res.json(result);
+    });
+
+    //make admin
+    app.put("/users", async (req, res) => {
+      const user = req.body;
+      console.log("put", user);
+      const filter = { email: user.email };
+      const updateDoc = { $set: { role: "admin" } };
+      const result = await usersCollection.updateOne(filter, updateDoc);
+      res.json(result);
+    });
+
+    //get user data
+    app.get("/users/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      let isAdmin = false;
+      if (user?.role === "admin") {
+        isAdmin = true;
+      }
+      res.json({ admin: isAdmin });
+    });
+
+    // DELETE product API
+    app.delete("/products/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await productCollection.deleteOne(query);
+      res.json(result);
     });
   } finally {
     //  await client.close()
